@@ -12,6 +12,35 @@ use App\Http\Resources\ApiSessionResource;
 
 class AuthController extends Controller
 {
+
+    public function register(Request $request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'email' => 'required|email',
+                'password' => 'required',
+                'name' => 'required',
+            ]
+        );
+        if ($validator->fails()) {
+            return response()->json(['status' => 'error', 'message' => $validator->errors(), 'code' => 401]);
+        }
+        // TODO create a user with OTP
+
+        $user = User::create([
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'name' => $request->name,
+        ]);
+        return response()->json(
+            ['status' => 'success',
+            'message' => 'User created successfully',
+            'code' => 200,
+            'data' => $user
+        ]);
+
+    }
     public function login(Request $request)
     {
         $validator = Validator::make(
@@ -29,7 +58,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->input('email'))->first();
 
         if (!$user || !Hash::check($password, $user->password)) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized', 'code' => 401]);
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized wrong password or email', 'code' => 401]);
         }
 
         $api_session = $user->sessions()
@@ -81,7 +110,6 @@ class AuthController extends Controller
 
         return new ApiSessionResource($api_session);
     }
-   
    
     public static function getApiSession($request, $withUser = false)
     {
